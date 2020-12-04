@@ -47,10 +47,8 @@ int main(int argc, char *argv[])
 
       /* reseve memory for matrices */
       uint32_t *I, *J;
-      uint32_t *val;
       I = (uint32_t *) malloc(2*nz * sizeof(uint32_t));
       J = (uint32_t *) malloc(2*nz * sizeof(uint32_t));
-      val = (uint32_t *) malloc(2*nz * sizeof(uint32_t));
 
       /*read the market matrix file*/
       for (uint32_t i=0; i<2*nz; i=i+2)
@@ -62,7 +60,6 @@ int main(int argc, char *argv[])
           //create the symmetric matrix.
           I[i+1]=J[i];
           J[i+1]=I[i];
-          val[i]=0;
       }
       if (f !=stdin) fclose(f);
 
