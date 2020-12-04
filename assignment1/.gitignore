@@ -1,0 +1,9 @@
+#exclude .out files
+*.out
+
+#exclude matricies folder
+matricies/*
+
+#exclude results files
+*.txt
+
