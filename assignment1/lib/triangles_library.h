@@ -24,7 +24,15 @@ void V3_algorithm(uint32_t const * const csc_col,uint32_t const * const csc_row,
 
 
 //binary search to find if an edge exists between two nodes
-int binary_search(uint32_t k, uint32_t i, uint32_t t_j, uint32_t const * const csc_col,uint32_t const * const csc_row);
+uint32_t binary_search(uint32_t k, uint32_t i, uint32_t t_j, uint32_t const * const csc_col,uint32_t const * const csc_row);
+
+
+//Hadamard algorithm
+void Hadamard_algorithm(uint32_t const * const csc_col, uint32_t const * const csc_row, uint32_t * const c3, uint32_t * const val, int n);
+
+
+//algorithm to merge to sorted list in O(N+M) complexity
+uint32_t compute_sum(uint32_t const i, uint32_t const j, uint32_t const * const csc_col, uint32_t const * const csc_row);
 
 
 //write to file function
