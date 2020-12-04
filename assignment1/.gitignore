@@ -4,6 +4,11 @@
 #exclude matricies folder
 matricies/*
 
+#exlude result folder
+results/*
+
 #exclude results files
 *.txt
 
+#exclude .o files
+*.o
