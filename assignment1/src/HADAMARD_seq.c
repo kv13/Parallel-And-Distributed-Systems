@@ -3,7 +3,6 @@
 #include <time.h>
 #include <stdint.h>
 
-
 #include "../lib/triangles_library.h"
 #include "../lib/mmio.h"
 
