@@ -94,11 +94,6 @@ int main(int argc, char *argv[])
       write_to_file(str,c3,N,time);
       printf("RESULTS HAVE BEEN WRITTEN UNDER THE DIR results.\n");
       printf("EXITING...\n");
-      uint32_t sum=0;
-      for(uint32_t i=0;i<(uint32_t)N;i++){
-        sum = sum+c3[i];
-      }
-      printf("the sum is %u",sum);
       free(c3);
       free(csc_col);
       free(csc_row);
