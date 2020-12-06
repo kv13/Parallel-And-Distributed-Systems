@@ -96,12 +96,12 @@ int main(int argc, char *argv[])
         printf("FEW NODES THUS SEQUENTIAL ALGORITHM IS SELECTED\n");
         Hadamard_algorithm(csc_col,csc_row,c3,val,N);
       }
-      Hadamard_algorithm_cilk(csc_col,csc_row,c3,val,N);
+      else Hadamard_algorithm_cilk(csc_col,csc_row,c3,val,N);
       clock_gettime(CLOCK_MONOTONIC, &ts_end);
 
       //#######################WRITE RESULTS TO FILE AND EXIT#######################
       char str[200];
-      snprintf(str,sizeof(str),"../results/HADAMARD_CILK.txt");
+      snprintf(str,sizeof(str),"results/HADAMARD_CILK.txt");
       double time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
       write_to_file(str,c3,N,time);
       printf("RESULTS HAVE BEEN WRITTEN UNDER THE DIR results.\n");
@@ -119,6 +119,7 @@ void Hadamard_algorithm_cilk(uint32_t const * const csc_col, uint32_t const * co
   cilk_for (uint32_t temp1=0;temp1<n;temp1++){
     uint32_t i;
     uint32_t j;
+    uint32_t sum;
     for (uint32_t temp2=0;temp2<csc_col[temp1+1]-csc_col[temp1];temp2++){
       i = temp1;
       j = csc_row[csc_col[temp1]+temp2];

@@ -67,6 +67,7 @@ void V3_algorithm(uint32_t const * const csc_col,uint32_t const * const csc_row,
   }
 }
 
+
 //binary search to find if exist edge from node k to node i.
 uint32_t binary_search(uint32_t k, uint32_t i, uint32_t t_j, uint32_t const * const csc_col,uint32_t const * const csc_row){
 	uint32_t first,last;
@@ -157,14 +158,21 @@ uint32_t compute_sum(uint32_t const i, uint32_t const j, uint32_t const * const 
 //write to file function
 void write_to_file(char *str, uint32_t const * const c3, int n, double u_sec){
 	FILE *fp;
+  FILE *fp1;
 	fp = fopen(str,"w+");
+  fp1 = fopen("results/total_times","a+");
 	if(fp == NULL){
 		fprintf(stderr,"ERROR: CANNOT OPEN FILES FOR WRITING THE RESULTS...EXITING\n");
 		exit(1);
 	}
+  uint32_t sum=0;
 	for(uint32_t i=0;i<n;i++){
 		fprintf(fp,"id = %u, c3 = %u \n",i,c3[i]);
+    sum = sum + c3[i];
 	}
+  printf("total triangles %u\n",sum);
 	fprintf(fp,"TOTAL TIME in microseconds: %lf u_sec",u_sec);
+  fprintf(fp1,"%d,%lf \n",n,u_sec/1000000);
 	fclose(fp);
+  fclose(fp1);
 }

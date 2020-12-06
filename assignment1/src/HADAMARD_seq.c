@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
       //#######################WRITE RESULTS TO FILE AND EXIT#######################
       char str[200];
-      snprintf(str,sizeof(str),"../results/HADAMARD_SEQ.txt");
+      snprintf(str,sizeof(str),"results/HADAMARD_SEQ.txt");
       double time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
       write_to_file(str,c3,N,time);
       printf("RESULTS HAVE BEEN WRITTEN UNDER THE DIR results.\n");

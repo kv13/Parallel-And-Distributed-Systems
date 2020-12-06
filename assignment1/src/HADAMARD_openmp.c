@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 
       //#######################WRITE RESULTS TO FILE AND EXIT#######################
       char str[200];
-      snprintf(str,sizeof(str),"../results/HADAMARD_OPENMP.txt");
+      snprintf(str,sizeof(str),"results/HADAMARD_OPENMP.txt");
       double time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
       write_to_file(str,c3,N,time);
       printf("RESULTS HAVE BEEN WRITTEN UNDER THE DIR results.\n");
@@ -119,7 +119,7 @@ void Hadamard_algorithm_openmp(uint32_t *csc_col, uint32_t *csc_row, uint32_t *c
   uint32_t temp1,temp2;
   #pragma omp parallel shared(csc_col,csc_row,c3,val) private(i,j,k,temp1,temp2) firstprivate(n)
   {
-    #pragma omp for schedule(auto) nowait
+    #pragma omp for schedule(dynamic) nowait
     for (temp1=0;temp1<n;temp1++){
       for (temp2=0;temp2<csc_col[temp1+1]-csc_col[temp1];temp2++){
         i = temp1;

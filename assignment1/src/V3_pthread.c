@@ -1,20 +1,31 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
-#include <cilk/cilk.h>
-#include <cilk/cilk_api.h>
 #include <pthread.h>
+#include <math.h>
 #include <time.h>
 
 #include "../lib/mmio.h"
 #include "../lib/triangles_library.h"
 
-//global mutex to used by threads.
+#define NUM_THREADS 15
 pthread_mutex_t mut;
 
 
-//V3 ALGORITHM USING CIKL
-void V3_algorithm_cilk(uint32_t const * const csc_col,uint32_t const * const csc_row, uint32_t * const c3, int n);
+typedef struct{
+	uint32_t t_id;
+	uint32_t l_bound, u_bound;
+	uint32_t workload;
+	uint32_t *csc_col;
+	uint32_t *csc_row;
+	uint32_t *c3;
+	pthread_t *id;
+}tag;
+
+
+//functions for threads.
+void V3_algorithm_pthread(uint32_t *csc_col, uint32_t *csc_row, uint32_t * const c3, int n);
+void *count_triangles_parallel(void *arg);
 
 
 int main(int argc, char *argv[])
@@ -58,6 +69,7 @@ int main(int argc, char *argv[])
 
       /* reseve memory for matrices */
       uint32_t *I, *J;
+      uint32_t *val;
       I = (uint32_t *) malloc(2*nz * sizeof(uint32_t));
       J = (uint32_t *) malloc(2*nz * sizeof(uint32_t));
 
@@ -90,18 +102,18 @@ int main(int argc, char *argv[])
       struct timespec ts_start;
       struct timespec ts_end;
 
-      printf("====================PARALLEL V3 ALGORITHM USING CILK==================== \n");
+      printf("====================PTHREAD V3 ALGORITHM==================== \n");
       clock_gettime(CLOCK_MONOTONIC, &ts_start);
       if(N<100){
-        printf("FEW NODES THUS SEQUENTIAL ALGORITHM IS SELECTED \n");
+        printf("FEW NODES THUS SEQUENTIAL ALGORITHM IS SELECTED\n");
         V3_algorithm(csc_col,csc_row,c3,N);
       }
-      else V3_algorithm_cilk(csc_col,csc_row,c3,N);
+      else V3_algorithm_pthread(csc_col,csc_row,c3,N);
       clock_gettime(CLOCK_MONOTONIC, &ts_end);
 
       //#######################WRITE RESULTS TO FILE AND EXIT#######################
       char str[200];
-      snprintf(str,sizeof(str),"results/V3_CILK.txt");
+      snprintf(str,sizeof(str),"../results/V3_PTHREADS.txt");
       double time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
       write_to_file(str,c3,N,time);
       printf("RESULTS HAVE BEEN WRITTEN UNDER THE DIR results.\n");
@@ -115,33 +127,66 @@ int main(int argc, char *argv[])
 }
 
 
-//V3 ALGORITHM USING CIKL
-void V3_algorithm_cilk(uint32_t const * const csc_col,uint32_t const * const csc_row, uint32_t * const c3, int n){
+void V3_algorithm_pthread(uint32_t *csc_col, uint32_t *csc_row, uint32_t * const c3, int n){
 
-  //check the number of workers.
-  //int numWorkers = __cilkrts_get_nworkers();
-  //printf("The number of workers is %d\n",numWorkers);
+  //declare thread variables.
+  pthread_t *threads_id;
+  threads_id = (pthread_t *)malloc(NUM_THREADS*sizeof(pthread_t));
+  uint32_t workload;
+  workload = floor((float)n/NUM_THREADS);
+  tag *tags = (tag *)malloc(NUM_THREADS*sizeof(tag));
 
-  //parallel implementation of V3 algorithm.
-  cilk_for (uint32_t i = 0;i<n;i++){
-    uint32_t j;
-    uint32_t k;
-    for(uint32_t temp1 = 0;temp1<csc_col[i+1]-csc_col[i];temp1++){
-      j = csc_row[csc_col[i]+temp1];
-      if(j<i+1)continue;
-      for(uint32_t temp2=0;temp2<csc_col[j+1]-csc_col[j];temp2++){
-        k = csc_row[csc_col[j]+temp2];
-        if(k<j+1)continue;
-        if(binary_search(k,i,temp1,csc_col,csc_row) !=0 ){
-
-          //we must use lock to avoid data races.
-          pthread_mutex_lock(&mut);
-          c3[i]++;
-          c3[j]++;
-          c3[k]++;
-          pthread_mutex_unlock(&mut);
-        }
-      }
-    }
+  //initialize and start threads.
+  for(uint32_t i=0;i<NUM_THREADS;i++){
+    tags[i].t_id = i;
+    tags[i].workload = workload;
+    tags[i].l_bound = i*workload;
+    tags[i].u_bound = (i+1)*workload;
+    tags[i].csc_col = csc_col;
+    tags[i].csc_row = csc_row;
+    tags[i].c3 = c3;
+    tags[i].id = &threads_id[i];
+    pthread_create(tags[i].id,NULL,count_triangles_parallel,(void *)&tags[i]);
   }
+  //....................DO WORK FROM MAIN..................
+  //COMPUTE TRIANGLES FOR THE REST OF THE NODES.
+  if(n-workload*NUM_THREADS>0){
+    tag main_tag;
+    main_tag.t_id = NUM_THREADS;
+    main_tag.workload = n-NUM_THREADS*workload;
+    main_tag.l_bound = NUM_THREADS*workload;
+    main_tag.u_bound = (uint32_t)n;
+    main_tag.csc_row = csc_row;
+    main_tag.csc_col = csc_col;
+    main_tag.c3 = c3;
+    main_tag.id = NULL;
+    count_triangles_parallel((void *)&main_tag);
+  }
+  for(int i=0;i<NUM_THREADS;i++){
+    pthread_join(*tags[i].id,NULL);
+  }
+}
+
+
+void *count_triangles_parallel(void *arg){
+  tag *t = (tag *)arg;
+	uint32_t i,j,k;
+	for(i=t->l_bound;i<t->u_bound;i++){
+		for(uint32_t temp1=0;temp1<t->csc_col[i+1]-t->csc_col[i];temp1++){
+			j = t->csc_row[t->csc_col[i]+temp1];
+			if(j>i){
+				for(uint32_t temp2=0;temp2<t->csc_col[j+1]-t->csc_col[j];temp2++){
+					k = t->csc_row[t->csc_col[j]+temp2];
+          if(k<j+1)continue;
+          if(binary_search(k,i,temp1,t->csc_col,t->csc_row) !=0 ){
+            pthread_mutex_lock(&mut);
+            t->c3[i]++;
+            t->c3[j]++;
+            t->c3[k]++;
+            pthread_mutex_unlock(&mut);
+          }
+				}
+			}
+		}
+	}
 }
