@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
       /*read the market matrix file*/
       for (uint32_t i=0; i<2*nz; i=i+2)
       {
-          fscanf(f, "%u %u \n", &I[i], &J[i]);
+          if(fscanf(f, "%u %u \n", &I[i], &J[i]));
           /* adjust from 1-based to 0-based */
           I[i]--;
           J[i]--;

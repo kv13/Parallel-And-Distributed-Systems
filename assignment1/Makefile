@@ -41,4 +41,4 @@ triangles_library.o:	lib/triangles_library.h lib/triangles_library.c
 all: V3 HADAMARD V3_cilk HADAMARD_cilk V3_openmp HADAMARD_openmp V3_pthreads HADAMARD_pthreads
 
 clean:
-	rm -f V3_seq.out HADAMARD_seq.out V3_cilk.out HADAMARD_cilk.out V3_openmp.out HADAMARD_openmp.out V3_pthreads.out HADAMARD_pthreads.out
+	rm -f V3_seq.out HADAMARD_seq.out V3_cilk.out HADAMARD_cilk.out V3_openmp.out HADAMARD_openmp.out V3_pthreads.out HADAMARD_pthreads.out triangles_library.o mmio.o
