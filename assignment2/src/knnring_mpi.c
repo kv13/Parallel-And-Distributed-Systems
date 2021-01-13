@@ -19,10 +19,10 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k){
 	k_nearest.m = m;
 	k_nearest.k = k;
 
-  //compute the distance Matrix D
+	  //compute the distance Matrix D
 	double *D = compute_D(X,Y,n,m,d,k);
 
-  //select k-nearest neighbors for every point in QUERY
+	 //select k-nearest neighbors for every point in QUERY
 	k_select(D,k_nearest.ndist, k_nearest.nidx,n,m,k);
 	return k_nearest;
 }
@@ -151,7 +151,7 @@ int partition(double *k_dist, int *k_neigh,int low, int high){
 
 void create_points(double *X,int size){
 	double *temp;
-  temp = X;
+	temp = X;
 	srand(time(NULL));
 	for(int i=0;i<size;i++)
 		temp[i] = (double) 1000*rand()/RAND_MAX;
@@ -167,7 +167,7 @@ void write_to_file(char *str1, int *nidx, double *ndist, int amount, int k){
   for(int i=0;i<amount;i++){
     fprintf(fp,"%d)%d -- %lf\n",counter,nidx[i],ndist[i]);
     counter ++;
-		if((i+1)%k == 0){
+	if((i+1)%k == 0){
       fprintf(fp,"k nearest neighbors for next point \n");
       counter = 1;
     }
@@ -178,95 +178,97 @@ void write_to_file(char *str1, int *nidx, double *ndist, int amount, int k){
 //######################### V1 FUNCTIONS ############################
 
 knnresult distrAllkNN(double *X, int n, int d, int k){
+	
+	//results variables
+	 knnresult knn_process;
+	knnresult knn_temp;
 
-  //results variables
-  knnresult knn_process;
-  knnresult knn_temp;
+	int p_rank;                            //PROCESS RANK
+	int p_size;                            //TOTAL NUMBER OF PROCESSES
+	int next,prev;                         //NEXT AND PREVIOUS PROCESSES
+	double *receive_buff;                  //BUFFERS FOR COMMUNICATION
+	double *Y;                             //QUERY POINTS
 
-  int p_rank;                            //PROCESS RANK
-  int p_size;                            //TOTAL NUMBER OF PROCESSES
-  int next,prev;                         //NEXT AND PREVIOUS PROCESSES
-  double *receive_buff;                  //BUFFERS FOR COMMUNICATION
-  double *Y;                             //QUERY POINTS
-
-  //variables for MPI COMMUNICATION.
-  MPI_Status status;
-  MPI_Request send_request,receive_request;
-  int tag;
+	//variables for MPI COMMUNICATION.
+	MPI_Status status;
+	MPI_Request send_request,receive_request;
+	int tag;
 
 	//time variables
 	struct timespec ts_start;
-  struct timespec ts_end;
+	struct timespec ts_end;
 	double time;
 
 
-  //find the number of processes
-  MPI_Comm_size(MPI_COMM_WORLD, &p_size);
+	//find the number of processes
+	MPI_Comm_size(MPI_COMM_WORLD, &p_size);
 
-  //find the id of the process
-  MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
+	//find the id of the process
+	MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
 
-  //define the communication tag
-  tag = 1;
+	//define the communication tag
+	tag = 1;
 
-  //define the next and the previous process.
-  //and create the circular communication
-  next = p_rank+1;
-  if(next == p_size) next = 0;
+	//define the next and the previous process.
+	//and create the circular communication
+	next = p_rank+1;
+	if(next == p_size) next = 0;
 
-  prev = p_rank-1;
-  if(prev== -1) prev = p_size-1;
+	prev = p_rank-1;
+	if(prev== -1) prev = p_size-1;
 
-  //initialize Y block
-  Y = (double *)malloc(n*d*sizeof(double));
+	//initialize Y block
+	Y = (double *)malloc(n*d*sizeof(double));
 
-  //in the first iteration every process computes distances between its own points
-  memcpy(Y,X,n*d*sizeof(double));
+	//in the first iteration every process computes distances between its own points
+	memcpy(Y,X,n*d*sizeof(double));
 
-  //initialize receive buffer
-  receive_buff = (double *)malloc(n*d*sizeof(double));
+	//initialize receive buffer
+	receive_buff = (double *)malloc(n*d*sizeof(double));
 
-  //MASK COMMUNICATION TIME
+	//MASK COMMUNICATION TIME
 	//Send and receive point for the next iteration
-	clock_gettime(CLOCK_MONOTONIC,&ts_start);
+	//clock_gettime(CLOCK_MONOTONIC,&ts_start);
+	
 	MPI_Isend(Y,n*d,MPI_DOUBLE,next,tag,MPI_COMM_WORLD, &send_request);
 	MPI_Irecv(receive_buff,n*d, MPI_DOUBLE, prev, tag, MPI_COMM_WORLD, &receive_request);
 
-  //find k-nearest neighbors in this set of points.
-  knn_process = kNN(X,Y,n,n,d,k);
+	//find k-nearest neighbors in this set of points.
+	knn_process = kNN(X,Y,n,n,d,k);
 
-  for(int i=0;i<n*k;i++) knn_process.nidx[i] = knn_process.nidx[i]+n*p_rank;
+	for(int i=0;i<n*k;i++) knn_process.nidx[i] = knn_process.nidx[i]+n*p_rank;
 
-  MPI_Wait(&send_request,&status);
-  //make sure receive_buffer is ready
-  MPI_Wait(&receive_request,&status);
-	clock_gettime(CLOCK_MONOTONIC,&ts_end);
-	time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-  printf("communication time%lf\n",time);
+	MPI_Wait(&send_request,&status);
+	//make sure receive_buffer is ready
+	MPI_Wait(&receive_request,&status);
+	
+	//clock_gettime(CLOCK_MONOTONIC,&ts_end);
+	//time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
+	//printf("communication time and computation time%lf\n",time);
 
   for(int i=0;i<p_size-1;i++){
-
-    memcpy(Y,receive_buff,n*d*sizeof(double));
-
-    //MASK COMMUNICATION TIME
-		//send the block to the next node
-		clock_gettime(CLOCK_MONOTONIC,&ts_start);
-		MPI_Isend(Y,n*d,MPI_DOUBLE,next,tag,MPI_COMM_WORLD, &send_request);
-		MPI_Irecv(receive_buff,n*d,MPI_DOUBLE,prev,tag,MPI_COMM_WORLD,&receive_request);
-
-		knn_temp = kNN(Y,X,n,n,d,k);
-
-    //compare k-nearest points
-    knn_combine(knn_process, knn_temp,n,k,(p_rank-i-1+p_size)%p_size);
-
-    //make sure Y buffer has been send in order to change it
-		MPI_Wait(&send_request,&status);
-    //make sure receive_buffer is ready
-		MPI_Wait(&receive_request,&status);
-
-
-		//clock_gettime(CLOCK_MONOTONIC,&ts_end);
-		//time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
+	  memcpy(Y,receive_buff,n*d*sizeof(double));
+	  
+	  //MASK COMMUNICATION TIME
+	  //send the block to the next node
+	  clock_gettime(CLOCK_MONOTONIC,&ts_start);
+	  MPI_Isend(Y,n*d,MPI_DOUBLE,next,tag,MPI_COMM_WORLD, &send_request);
+	  MPI_Irecv(receive_buff,n*d,MPI_DOUBLE,prev,tag,MPI_COMM_WORLD,&receive_request);
+	  
+	  
+	  knn_temp = kNN(Y,X,n,n,d,k);
+	  
+	  //compare k-nearest points
+	  knn_combine(knn_process, knn_temp,n,k,(p_rank-i-1+p_size)%p_size);
+	  
+	  
+	  //make sure Y buffer has been send in order to change it
+	  MPI_Wait(&send_request,&status);
+	  //make sure receive_buffer is ready
+	  MPI_Wait(&receive_request,&status);
+	  
+	  //clock_gettime(CLOCK_MONOTONIC,&ts_end);
+	  //time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
 	  //printf("communication time and knn compute time%lf\n",time);
   }
   free(Y);
