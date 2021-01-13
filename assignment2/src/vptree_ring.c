@@ -57,19 +57,19 @@ void create_subtree(tree_struct tree,double *X, int *nidx, int n, int d, int B, 
 
       tree.indexes[*tree.leaf_counter] = nidx[0];
       tree.mu[*tree.leaf_counter] = -MAX_POINTS;
-			tree.mu_points[*tree.leaf_counter] = 1;
-			double fractpart,intpart;
-			//right leaf
-			if(height%2 == 0){
-				fractpart = modf(tree.mu[(height-2)/2],&intpart);
-				tree.mu[(height-2)/2] = intpart-(double)((double)(*tree.leaf_counter)/(double)(MAX_POINTS));
+	  tree.mu_points[*tree.leaf_counter] = 1;
+	  double fractpart,intpart;
+	  //right leaf
+	  if(height%2 == 0){
+			fractpart = modf(tree.mu[(height-2)/2],&intpart);
+			tree.mu[(height-2)/2] = intpart-(double)((double)(*tree.leaf_counter)/(double)(MAX_POINTS));
 			}
-			//left leaf
-			else {
-				fractpart = modf(tree.mu[(height-1)/2],&intpart);
-				tree.mu[(height-1)/2] = (double)(-1*(*tree.leaf_counter))+fractpart;
+	  //left leaf
+	  else {
+			fractpart = modf(tree.mu[(height-1)/2],&intpart);
+			tree.mu[(height-1)/2] = (double)(-1*(*tree.leaf_counter))+fractpart;
 			}
-      *tree.leaf_counter = *tree.leaf_counter - 1;
+	  *tree.leaf_counter = *tree.leaf_counter - 1;
     }
     //dont have overflow
     else{
@@ -116,7 +116,7 @@ void create_subtree(tree_struct tree,double *X, int *nidx, int n, int d, int B, 
     }
     free(distances_copy);
 
-		if(n<=B){                       //we count it as a leaf
+		if(n<=B){ //we count it as a leaf
 			if(n == 2) tree.mu[height] = (double)(-1*(2*height+1)) - (double)((double)1/(double)(10*MAX_POINTS));
 			else tree.mu[height]=(double)(-1*(2*height+1))-(double)((double)(2*height+2)/(double)MAX_POINTS);
 		}
@@ -230,13 +230,13 @@ void write_to_file_3(char *str, int *array,double *array2,double *array3, int am
 
 //##########################SEARCH FUNCTIONS##############################
 knnresult search_k_nearest(double *X, int *indexes, double *mu, double *Y, int n, int m, int d, int k){
-
+	
 	knnresult knn;
 
-	int    *num_neigh = (int *)malloc(sizeof(int));
-	int    *nidx = (int *)malloc(m*k*sizeof(int));
-	double *ndist = (double *)malloc(m*k*sizeof(double));
-	int height;
+  int    *num_neigh = (int *)malloc(sizeof(int));
+  int    *nidx = (int *)malloc(m*k*sizeof(int));
+  double *ndist = (double *)malloc(m*k*sizeof(double));
+  int height;
 
 
   //time variables to measure times
@@ -256,7 +256,7 @@ knnresult search_k_nearest(double *X, int *indexes, double *mu, double *Y, int n
       nidx[i*k+j] = -1;
     }
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
-		search_tree_1(X,indexes,mu,Y,nidx,ndist,n,i,d,k,height,num_neigh);
+	search_tree_1(X,indexes,mu,Y,nidx,ndist,n,i,d,k,height,num_neigh);
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     mean_time += time;
@@ -288,9 +288,9 @@ void search_tree_1(double *X, int *indexes, double *mu, double *Y, int *nidx,dou
   }
   else{
     double distance = 0;
-    for(int j=0;j<d;j++)
-			distance += pow(Y[point*d+j]-X[d*indexes[height]+j],2);
-		distance = sqrt(fabs(distance));
+    for(int j=0;j<d;j++)distance += pow(Y[point*d+j]-X[d*indexes[height]+j],2);
+	
+	distance = sqrt(fabs(distance));
 
     insert_point_vpt(nidx,ndist,point,k,num_neigh,indexes[height],distance);
     double tau = ndist[(1+point)*k-1];
@@ -314,16 +314,16 @@ void check_leaf(double *X,int *indexes,double *mu,double *Y,int *nidx,double *nd
 	//its a leaf
 	if(mu[height] == -MAX_POINTS){
 		distance = 0;
-		for(int j=0;j<d;j++)
-			distance += pow(Y[point*d+j]-X[d*indexes[height]+j],2);
+		for(int j=0;j<d;j++)distance += pow(Y[point*d+j]-X[d*indexes[height]+j],2);
+
 		distance = sqrt(fabs(distance));
 		insert_point_vpt(nidx,ndist,point,k,num_neigh,indexes[height],distance);
 		return;
 	}
 	else if(mu[height]<0){
 		distance = 0;
-		for(int j=0;j<d;j++)
-			distance += pow(Y[point*d+j]-X[d*indexes[height]+j],2);
+		for(int j=0;j<d;j++)distance += pow(Y[point*d+j]-X[d*indexes[height]+j],2);
+		
 		distance = sqrt(fabs(distance));
 		insert_point_vpt(nidx,ndist,point,k,num_neigh,indexes[height],distance);
 
@@ -367,7 +367,7 @@ knnresult distrV2(double *X, int n,int d, int k, int B){
 
   //variables to store results
   knnresult knn;
-	knnresult knn_temp;
+  knnresult knn_temp;
 
   int    p_rank;
   int    p_size;
@@ -447,13 +447,13 @@ knnresult distrV2(double *X, int n,int d, int k, int B){
     memcpy(vpt_tree.coords,receive_buff_coords,n*d*sizeof(double));
 
     //send the current vantage point to the next one
-		MPI_Isend(vpt_tree.indexes, n,MPI_INT   ,next,tag,MPI_COMM_WORLD, &requests[3]);
-		MPI_Isend(vpt_tree.mu     , n,MPI_DOUBLE,next,tag,MPI_COMM_WORLD, &requests[4]);
-		MPI_Isend(vpt_tree.coords,n*d,MPI_DOUBLE,next,tag,MPI_COMM_WORLD, &requests[5]);
+	MPI_Isend(vpt_tree.indexes, n,MPI_INT   ,next,tag,MPI_COMM_WORLD, &requests[3]);
+	MPI_Isend(vpt_tree.mu     , n,MPI_DOUBLE,next,tag,MPI_COMM_WORLD, &requests[4]);
+	MPI_Isend(vpt_tree.coords,n*d,MPI_DOUBLE,next,tag,MPI_COMM_WORLD, &requests[5]);
 
     MPI_Irecv(receive_buff_indexes, n,MPI_INT   ,prev,tag,MPI_COMM_WORLD,&requests[0]);
-		MPI_Irecv(receive_buff_mu     , n,MPI_DOUBLE,prev,tag,MPI_COMM_WORLD,&requests[1]);
-		MPI_Irecv(receive_buff_coords,n*d,MPI_DOUBLE,prev,tag,MPI_COMM_WORLD,&requests[2]);
+	MPI_Irecv(receive_buff_mu     , n,MPI_DOUBLE,prev,tag,MPI_COMM_WORLD,&requests[1]);
+	MPI_Irecv(receive_buff_coords,n*d,MPI_DOUBLE,prev,tag,MPI_COMM_WORLD,&requests[2]);
 
     knn_temp = search_k_nearest(vpt_tree.coords,vpt_tree.indexes,vpt_tree.mu,Y,n,n,d,k);
     knn_combine(knn,knn_temp,n,k,(p_rank-i-1+p_size)%p_size);

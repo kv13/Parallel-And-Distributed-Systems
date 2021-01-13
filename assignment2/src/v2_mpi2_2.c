@@ -38,7 +38,7 @@ int main(int argc,char *argv[]){
 
   //time variables to measure time
   struct timespec ts_start;
-	struct timespec ts_end;
+  struct timespec ts_end;
   double time;
 
   if(p_rank == 0){
