@@ -46,6 +46,9 @@ void insert_point_vpt(int *nidx, double *ndist,int point, int k, int *num_neigh,
 //search function
 void search_tree_1(double *X, int *indexes, double *mu, double *Y, int *nidx,double *ndist, int n, int point, int d, int k, int height, int *num_neigh);
 
+//search leaf
+void check_leaf(double *X,int *indexes,double *mu,double *Y,int *nidx,double *ndist,int n,int point,int d,int k,int height,int *num_neigh);
+
 //######################### MPI FUNCTIONS ###################################
 knnresult distrV2(double *X, int n,int d, int k, int B);
 
