@@ -41,7 +41,6 @@ int main(int argc, char *argv[]){
 
   if(p_rank == 0){
 
-    //create all the points and distribut them
     X = (double *)malloc(n*d*sizeof(double));
 
     for(int i=1;i<p_size;i++){
@@ -53,11 +52,6 @@ int main(int argc, char *argv[]){
     //compute points for myself
     create_points(X,n*d);
 
-    //simple knn
-    //double *Y;
-    //Y = (double *)malloc(n*d*sizeof(double));
-    //memcpy(Y,X,n*d*sizeof(double));
-
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
     knnresult results = distrAllkNN(X,n,d,k);
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
@@ -66,8 +60,8 @@ int main(int argc, char *argv[]){
 
 
     //WRITE RESULTS TO FILE
-    //char str[200];
-    //snprintf(str,sizeof(str),"results/dist_knn_%d_%d_%d.txt",n,d,k);
+    char str[200];
+    snprintf(str,sizeof(str),"results/dist_knn_%d_%d_%d.txt",n,d,k);
     //write_to_file(str,results.nidx,results.ndist,n*k,results.k);
 
     for(int p=1;p<p_size;p++){

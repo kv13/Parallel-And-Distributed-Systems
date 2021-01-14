@@ -76,18 +76,18 @@ int main(int argc,char *argv[]){
     knnresult results = distrV2(X,n,d,k,B);
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-    printf("TOTAL V2 time: %lf\n",time,p_rank);
+    printf("TOTAL V2 time: %lf\n",time);
 
 
     //WRITE TO FILE
-    //char str[200];
-    //snprintf(str,sizeof(str),"results/dist_v2_%d_%d_%d.txt",n,d,k);
-    //write_to_file(str,results.nidx,results.ndist,n*k,results.k);
+    char str[200];
+    snprintf(str,sizeof(str),"results/dist_v2_%d_%d_%d.txt",n,d,k);
+    write_to_file(str,results.nidx,results.ndist,n*k,results.k);
 
     for(int p=1;p<p_size;p++){
       MPI_Recv(results.nidx, n*k,    MPI_INT,p,tag,MPI_COMM_WORLD, &status);
       MPI_Recv(results.ndist,n*k, MPI_DOUBLE,p,tag,MPI_COMM_WORLD, &status);
-      //write_to_file(str,results.nidx,results.ndist,n*k,results.k);
+      write_to_file(str,results.nidx,results.ndist,n*k,results.k);
     }
   }
   else{

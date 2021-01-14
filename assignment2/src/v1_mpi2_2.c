@@ -71,7 +71,7 @@ int main(int argc,char *argv[]){
 
     //simple knn
     //double *Y;
-    Y// = (double *)malloc(10*d*sizeof(double));
+    //Y = (double *)malloc(10*d*sizeof(double));
     //memcpy(Y,X_total,10*d*sizeof(double));
     //clock_gettime(CLOCK_MONOTONIC, &ts_start);
     //knnresult results_simple_knn = kNN(X_total,Y,n_total,10,d,k);
@@ -92,14 +92,14 @@ int main(int argc,char *argv[]){
     printf("TOTAL V1 time: %lf\n",time);
 
     //WRITE RESULTS TO FILE
-    //char str[200];
-    //snprintf(str,sizeof(str),"results/dist_knn_%d_%d_%d.txt",n,d,k);
-    //write_to_file(str,results.nidx,results.ndist,n*k,results.k);
+    char str[200];
+    snprintf(str,sizeof(str),"results/dist_knn_%d_%d_%d.txt",n,d,k);
+    write_to_file(str,results.nidx,results.ndist,n*k,results.k);
 
     for(int p=1;p<p_size;p++){
       MPI_Recv(results.nidx, n*k,    MPI_INT,p,tag,MPI_COMM_WORLD, &status);
       MPI_Recv(results.ndist,n*k, MPI_DOUBLE,p,tag,MPI_COMM_WORLD, &status);
-      //write_to_file(str,results.nidx,results.ndist,n*k,results.k);
+      write_to_file(str,results.nidx,results.ndist,n*k,results.k);
     }
   }
   else{

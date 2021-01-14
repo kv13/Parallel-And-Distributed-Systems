@@ -51,7 +51,6 @@ int main(int argc, char *argv[]){
       MPI_Send(X,n*d,MPI_DOUBLE, i, tag, MPI_COMM_WORLD);
     }
 
-    printf("edw ftanei ???\n");
 
     //compute points for myself
     create_points(X,n*d);
@@ -60,7 +59,7 @@ int main(int argc, char *argv[]){
     knnresult results = distrV2(X,n,d,k,B);
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-    printf("TOTAL V2 time: %lf\n",time,p_rank);
+    printf("TOTAL V2 time: %lf\n",time);
 
     //write results to file
     //char str[200];
@@ -70,7 +69,7 @@ int main(int argc, char *argv[]){
     for(int p=1;p<p_size;p++){
       MPI_Recv(results.nidx, n*k,    MPI_INT,p,tag,MPI_COMM_WORLD, &status);
       MPI_Recv(results.ndist,n*k, MPI_DOUBLE,p,tag,MPI_COMM_WORLD, &status);
-      write_to_file(str,results.nidx,results.ndist,n*k,results.k);
+      //write_to_file(str,results.nidx,results.ndist,n*k,results.k);
     }
 
   }
