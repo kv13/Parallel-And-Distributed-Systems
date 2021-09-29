@@ -28,7 +28,10 @@ typedef struct{
 
 // ******* functions declaration *******
 void blocked_csr_init(blocked_csr *blk_A, csr_format *csr_A, int b);
+void blocked_csr_free(blocked_csr *blk_A);
+
 void blocked_csc_init(blocked_csc *blk_B, csc_format *csc_B, int b);
+void blocked_csc_free(blocked_csc *blk_B);
 
 void blocking_csr3(blocked_csr *blk_A, csr_format *csr_A);
 void blocked_2_csr(blocked_csr *blk_A, csr_format *csr_AA);
