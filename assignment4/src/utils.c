@@ -16,6 +16,17 @@ void csr_init(csr_format *mtx1, market_matrix *mtx2){
     mtx1->nz = mtx2->nz;
 }
 
+// initialize scr matrices for distributed system
+void csr_init2(csr_format *mtx1, int N, int M, int nz){
+    mtx1->csr_col = (uint32_t *)malloc(sizeof(uint32_t)*nz);
+    mtx1->csr_row = (uint32_t *)malloc(sizeof(uint32_t)*(N+1));
+
+    mtx1->N  = N;
+    mtx1->M  = M;
+    mtx1->nz = nz;
+
+}
+
 void csr_free(csr_format *mtx1){
     free(mtx1->csr_col);
     free(mtx1->csr_row);
