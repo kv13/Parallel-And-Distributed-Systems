@@ -38,6 +38,7 @@ int  partition(int *arr_1, int *arr_2, int l, int h);
 void read_mm_matrices(market_matrix *mtx, char *name);
 void coo2csc(uint32_t *const row, uint32_t *const col, uint32_t const *const row_coo, uint32_t const *const col_coo, uint32_t const nnz, uint32_t const n, uint32_t const isOneBased);
 void csr_init(csr_format *mtx1, market_matrix *mtx2);
+void csr_init2(csr_format *mtx1, int N, int M, int nz);
 void csr_free(csr_format *mtx1);
 void csc_init(csc_format *mtx1, market_matrix *mtx2);
 void csc_free(csc_format *mtx1);
