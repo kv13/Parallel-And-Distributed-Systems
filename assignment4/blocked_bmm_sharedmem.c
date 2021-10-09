@@ -65,7 +65,7 @@ void interface_1(int argc, char *argv[]){
     
     struct timespec ts_start;
     struct timespec ts_end;
-    double time;
+    double time,time_1 = 0;
     
     // ************** Blocking **************
     csr_format  *csr_AA;
@@ -86,6 +86,7 @@ void interface_1(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("blocking time for matrix A %lf seconds \n",time/(double)(1000000));
+    time_1 += time;
 
     //free useless memory
     csr_free(csr_A);
@@ -125,6 +126,7 @@ void interface_1(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("blocking time for matrix B %lf seconds \n",time/(double)(1000000));
+    time_1 += time;
 
     //free useless memory
     csc_free(csc_B);
@@ -143,7 +145,8 @@ void interface_1(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("blocked multiplication took %lf seconds \n",time/(double)(1000000));
-    
+    time_1 += time;
+
     // free matrices.
     csc_free(csc_BB);
     blocked_csc_free(blk_csc_B);
@@ -151,18 +154,7 @@ void interface_1(int argc, char *argv[]){
     csr_free(csr_AA);
     blocked_csr_free(blk_csr_A);
 
-    // ************** test results **************
-    // CAUTION: USE ONLY FOR SMALL MATRICES
-
-    // read correct matrix C
-    char path_to_C[100] = "data/matrix_C_100k.mtx";
-    market_matrix *mtx_C_correct;
-    mtx_C_correct = (market_matrix *)malloc(sizeof(market_matrix));
-    read_mm_matrices(mtx_C_correct, path_to_C);
-
-    // test results
-    quick_sort(coo_C->coo_I,coo_C->coo_J,0,coo_C->cur_nz-1);
-    test_results(mtx_C_correct, coo_C);
+    printf("total time with blocking was %lf seconds \n", time_1/(double)(1000000));
 }
 
 void interface_2(int argc, char *argv[]){
@@ -170,7 +162,7 @@ void interface_2(int argc, char *argv[]){
     // timining variables
     struct timespec ts_start;
     struct timespec ts_end;
-    double time;
+    double time,time_1 = 0;
 
     // reading and blocking is implemented sequential
     // because due to atomic writes every parallel implementation
@@ -215,6 +207,7 @@ void interface_2(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("blocking time for matrix A %lf seconds \n",time/(double)(1000000));
+    time_1 += time;
 
     //free useless memory
     csr_free(csr_A);
@@ -254,6 +247,7 @@ void interface_2(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("blocking time for matrix B %lf seconds \n",time/(double)(1000000));
+    time_1 += time;
 
     //free useless memory
     csc_free(csc_B);
@@ -294,6 +288,7 @@ void interface_2(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("blocking time for matrix F %lf seconds \n",time/(double)(1000000));
+    time_1+= time;
 
     //free useless memory
     csr_free(csr_F);
@@ -312,7 +307,8 @@ void interface_2(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("blocked filtered multiplication took %lf seconds \n",time/(double)(1000000));
-    
+    time_1 += time;
+
     // free matrices.
     csr_free(csr_FF);
     blocked_csr_free(blk_csr_F);
@@ -323,17 +319,5 @@ void interface_2(int argc, char *argv[]){
     csc_free(csc_BB);
     blocked_csc_free(blk_csc_B);
 
-    // ************** test results **************
-    // CAUTION: USE ONLY FOR SMALL MATRICES
-
-    // read correct matrix C
-    char path_to_C[150] = "data/matrix_C_f_1M.mtx";
-    market_matrix *mtx_C_correct;
-    mtx_C_correct = (market_matrix *)malloc(sizeof(market_matrix));
-    read_mm_matrices(mtx_C_correct, path_to_C);
-
-    // test results
-    quick_sort(coo_C->coo_I,coo_C->coo_J,0,coo_C->cur_nz-1);
-    test_results(mtx_C_correct, coo_C);
-
+    printf("total time with blocking was %lf seconds \n", time_1/(double)(1000000));
 }
