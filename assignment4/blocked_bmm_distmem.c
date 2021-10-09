@@ -19,6 +19,7 @@
 
 void interface_1(int argc, char *argv[]);
 void interface_2(int argc, char *argv[]);
+void interface_3(int argc, char *argv[]);
 
 int main(int argc, char *argv[]){
 
@@ -354,20 +355,6 @@ void interface_1(int argc, char *argv[]){
         // total time is the sum of timings for broadcast B, distribute A,
         // blocking A, blocking B, matrix multiplication, gather results
         printf("Master Node: Total time for distributed implementation %lf \n",time/(double)(1000000));
-
-
-        // ************** test results **************
-        // CAUTION: USE ONLY FOR SMALL MATRICES
-
-        // read correct matrix C
-        char path_to_C[100] = "data/matrix_C.mtx";
-        market_matrix *mtx_C_correct;
-        mtx_C_correct = (market_matrix *)malloc(sizeof(market_matrix));
-        read_mm_matrices(mtx_C_correct, path_to_C);
-
-        // test results
-        quick_sort(total_C->coo_I,total_C->coo_J,0,total_C->cur_nz-1);
-        test_results(mtx_C_correct, total_C);
     }
     else{
 
@@ -397,9 +384,11 @@ void interface_1(int argc, char *argv[]){
 
 void interface_2(int argc, char *argv[]){
     
-    // declare some variables
-    int b, nz, nb, N, M, *coo_I, *coo_J;
+    // declare variables for matrix A
+    int b, nz, N, M, *coo_I, *coo_J;
+    // declare variables for matrix F
     int F_nz, F_N, F_M, *F_coo_I, *F_coo_J;
+    // declare variables for matrix B;
     market_matrix *mtx_B;
 
     // declare time variables
@@ -409,17 +398,19 @@ void interface_2(int argc, char *argv[]){
 
     // INITIALIZE MPI COMMUNICATIONS
     int p_size, p_rank;
-
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &p_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
-    
+
     MPI_Status status; // status communication
     int tag = 1;       // communication tag
 
     // matrix B is red by all nodes
     mtx_B = (market_matrix *)malloc(sizeof(market_matrix)); 
+
     if(p_rank == 0){
+        // read variable b
+        b  = atoi(argv[4]);
         read_mm_matrices(mtx_B, argv[3]);
     }
 
@@ -428,6 +419,7 @@ void interface_2(int argc, char *argv[]){
     if(p_rank == 0)
         clock_gettime(CLOCK_MONOTONIC, &ts_start);
     
+    MPI_Bcast(&b       , 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&mtx_B->N, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&mtx_B->M, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&mtx_B->nz,1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -445,12 +437,45 @@ void interface_2(int argc, char *argv[]){
         clock_gettime(CLOCK_MONOTONIC, &ts_end);
         time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     }
-    
-    // master reads and distribute filter F and matrix A 
-    if(p_rank == 0){
 
-        // read variable b
-        b  = atoi(argv[4]);
+    // transform matrix B to csc format
+    csc_format *csc_B;
+    csc_B = (csc_format *)malloc(sizeof(csc_format));
+    csc_init(csc_B, mtx_B);
+
+    coo2csc(csc_B->csc_row, csc_B->csc_col, mtx_B->coo_I, mtx_B->coo_J, mtx_B->nz, mtx_B->M, 0);
+
+    // free useless memory space
+    free(mtx_B->coo_I);
+    free(mtx_B->coo_J);
+    free(mtx_B);
+
+    // ************** Blocking **************
+    csc_format *csc_BB;
+    csc_BB = (csc_format *)malloc(sizeof(csc_format));
+
+    blocked_csc *blk_csc_B;
+    blk_csc_B = (blocked_csc *)malloc(sizeof(blocked_csc));
+    blocked_csc_init(blk_csc_B, csc_B, b);
+
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
+    //****************************************/
+
+    blocking_csc3(blk_csc_B, csc_B);
+    blocked_2_csc(blk_csc_B, csc_BB);
+
+    //****************************************/
+    clock_gettime(CLOCK_MONOTONIC, &ts_end);
+    time_1 = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
+    printf("node %d: blocking time for matrix B %lf seconds \n",p_rank, time_1/(double)(1000000));
+
+    if(p_rank == 0)
+        time += time_1;
+
+    //free useless memory
+    csc_free(csc_B);
+
+    if(p_rank == 0){
 
         market_matrix *mtx_A;
         mtx_A = (market_matrix *)malloc(sizeof(market_matrix));
@@ -460,7 +485,7 @@ void interface_2(int argc, char *argv[]){
             printf("Dimensions Problem \n");
             exit(1);
         }
-        
+
         // timing for distributing matrix A 
         clock_gettime(CLOCK_MONOTONIC, &ts_start);
         
@@ -476,7 +501,6 @@ void interface_2(int argc, char *argv[]){
         for(int i=1;i<p_size;i++){
             MPI_Send(&N          , 1, MPI_INT, i, tag, MPI_COMM_WORLD);
             MPI_Send(&mtx_A->M   , 1, MPI_INT, i, tag, MPI_COMM_WORLD);
-            MPI_Send(&b          , 1, MPI_INT, i, tag, MPI_COMM_WORLD);
             MPI_Send(&temp_nz[i] , 1, MPI_INT, i, tag, MPI_COMM_WORLD);
         }
         
@@ -613,12 +637,11 @@ void interface_2(int argc, char *argv[]){
         free(mtx_F->coo_I);
         free(mtx_F->coo_J);
         free(mtx_F);
-    }else{
-        
+    }
+    else{
         // receive matrix A information
         MPI_Recv(&N  , 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
         MPI_Recv(&M  , 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
-        MPI_Recv(&b  , 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
         MPI_Recv(&nz , 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
 
         coo_I = (int *)malloc(sizeof(int) * nz);
@@ -637,6 +660,9 @@ void interface_2(int argc, char *argv[]){
 
         MPI_Recv(F_coo_I, F_nz, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
         MPI_Recv(F_coo_J, F_nz, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
+
+        printf("%d, %d, %d \n",N,M,nz);
+        printf("%d, %d, %d \n",F_N,F_M,F_nz);
     }
 
     // transform submatrix A to csr format
@@ -649,8 +675,6 @@ void interface_2(int argc, char *argv[]){
     // free useless memory
     free(coo_I);
     free(coo_J);
-
-    nb = csr_A->M / b;
 
     // ************** Blocking **************
     csr_format  *csr_AA;
@@ -677,43 +701,6 @@ void interface_2(int argc, char *argv[]){
         
     //free useless memory
     csr_free(csr_A);
-
-    // transform matrix B to csc format
-    csc_format *csc_B;
-    csc_B = (csc_format *)malloc(sizeof(csc_format));
-    csc_init(csc_B, mtx_B);
-
-    coo2csc(csc_B->csc_row, csc_B->csc_col, mtx_B->coo_I, mtx_B->coo_J, mtx_B->nz, mtx_B->M, 0);
-
-    // free useless memory space
-    free(mtx_B->coo_I);
-    free(mtx_B->coo_J);
-    free(mtx_B);
-
-    // ************** Blocking **************
-    csc_format *csc_BB;
-    csc_BB = (csc_format *)malloc(sizeof(csc_format));
-
-    blocked_csc *blk_csc_B;
-    blk_csc_B = (blocked_csc *)malloc(sizeof(blocked_csc));
-    blocked_csc_init(blk_csc_B, csc_B, b);
-
-    clock_gettime(CLOCK_MONOTONIC, &ts_start);
-    //****************************************/
-
-    blocking_csc3(blk_csc_B, csc_B);
-    blocked_2_csc(blk_csc_B, csc_BB);
-
-    //****************************************/
-    clock_gettime(CLOCK_MONOTONIC, &ts_end);
-    time_1 = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-    printf("node %d: blocking time for matrix B %lf seconds \n",p_rank, time_1/(double)(1000000));
-
-    if(p_rank == 0)
-        time += time_1;
-
-    //free useless memory
-    csc_free(csc_B);  
 
     // transform filter F to csr format
     csr_format *csr_F;
@@ -839,23 +826,9 @@ void interface_2(int argc, char *argv[]){
         // total time is the sum of timings for broadcast B, distribute A and F,
         // blocking A, blocking B, blocking F matrix multiplication, gather results
         printf("Master Node: Total time for distributed implementation %lf \n",time/(double)(1000000));
-
-
-        // ************** test results **************
-        // CAUTION: USE ONLY FOR SMALL MATRICES
-
-        // read correct matrix C
-        char path_to_C[100] = "data/matrix_C.mtx";
-        market_matrix *mtx_C_correct;
-        mtx_C_correct = (market_matrix *)malloc(sizeof(market_matrix));
-        read_mm_matrices(mtx_C_correct, path_to_C);
-
-        // test results
-        quick_sort(total_C->coo_I,total_C->coo_J,0,total_C->cur_nz-1);
-        test_results(mtx_C_correct, total_C);
     }
     else{
-
+        
         // send number nz elements of submatrix C
         MPI_Send(&coo_C->cur_nz, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 
@@ -863,7 +836,7 @@ void interface_2(int argc, char *argv[]){
         int fix = p_rank * N;
         for(int k=0;k<coo_C->cur_nz;k++)
             coo_C->coo_I[k] = coo_C->coo_I[k] + fix;
-        
+
         // send coordinates
         if(coo_C->cur_nz != 0){
             MPI_Send(coo_C->coo_I, coo_C->cur_nz, MPI_INT, 0, tag, MPI_COMM_WORLD);
@@ -872,11 +845,9 @@ void interface_2(int argc, char *argv[]){
 
         //free useless memory
         coo_free(coo_C);
-
     }
 
     //execution is over
     MPI_Finalize();
-
     return ;
 }
