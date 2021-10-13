@@ -69,9 +69,6 @@ void interface_1(int argc, char *argv[]){
     }
 
     // broadcast matrix B information
-    // timing for broadcasting matrix B
-    if(p_rank == 0)
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
     
     MPI_Bcast(&mtx_B->N, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&mtx_B->M, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -86,11 +83,6 @@ void interface_1(int argc, char *argv[]){
     MPI_Bcast(mtx_B->coo_I, mtx_B->nz, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(mtx_B->coo_J, mtx_B->nz, MPI_INT, 0, MPI_COMM_WORLD);
     
-    if(p_rank == 0){
-        clock_gettime(CLOCK_MONOTONIC, &ts_end);
-        time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-    }
-
     // master reads and distribute matrix A
     if(p_rank == 0){
         
@@ -105,9 +97,6 @@ void interface_1(int argc, char *argv[]){
             printf("Dimensions Problem \n");
             exit(1);
         }
-
-        // timing for distributing matrix A 
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
         
         // compute rows per node and total nonzero element per node
         N            = mtx_A->N / p_size;
@@ -164,9 +153,6 @@ void interface_1(int argc, char *argv[]){
             MPI_Send(temp_J[i],temp_nz[i+1], MPI_INT, i+1, tag, MPI_COMM_WORLD);
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &ts_end);
-        time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-        
         // free useless memory space
         for(int i=0; i<p_size-1;i++){
             free(temp_I[i]);
@@ -228,9 +214,6 @@ void interface_1(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     time_1 = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("node %d: blocking time for matrix A %lf seconds \n",p_rank, time_1/(double)(1000000));
-
-    if(p_rank == 0)
-        time += time_1;
         
     //free useless memory
     csr_free(csr_A);
@@ -305,8 +288,6 @@ void interface_1(int argc, char *argv[]){
         int total_size = coo_C->cur_nz;
         int sub_size[p_size-1];
 
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
-
         // compute total number of non zero element
         for(int i=1;i<p_size;i++){
             MPI_Recv(&sub_size[i-1], 1, MPI_INT, i, tag, MPI_COMM_WORLD, &status);
@@ -348,13 +329,6 @@ void interface_1(int argc, char *argv[]){
             free(temp_I);
             free(temp_J);
         }
-
-        clock_gettime(CLOCK_MONOTONIC, &ts_end);
-        time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-
-        // total time is the sum of timings for broadcast B, distribute A,
-        // blocking A, blocking B, matrix multiplication, gather results
-        printf("Master Node: Total time for distributed implementation %lf \n",time/(double)(1000000));
     }
     else{
 
@@ -415,9 +389,6 @@ void interface_2(int argc, char *argv[]){
     }
 
     // broadcast matrix B information
-    // timing for broadcasting matrix B
-    if(p_rank == 0)
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
     
     MPI_Bcast(&b       , 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&mtx_B->N, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -432,11 +403,6 @@ void interface_2(int argc, char *argv[]){
 
     MPI_Bcast(mtx_B->coo_I, mtx_B->nz, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(mtx_B->coo_J, mtx_B->nz, MPI_INT, 0, MPI_COMM_WORLD);
-    
-    if(p_rank == 0){
-        clock_gettime(CLOCK_MONOTONIC, &ts_end);
-        time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-    }
 
     // transform matrix B to csc format
     csc_format *csc_B;
@@ -486,8 +452,6 @@ void interface_2(int argc, char *argv[]){
             exit(1);
         }
 
-        // timing for distributing matrix A 
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
         
         // compute rows per node and total nonzero element per node
         N            = mtx_A->N / p_size;
@@ -543,9 +507,6 @@ void interface_2(int argc, char *argv[]){
             MPI_Send(temp_J[i],temp_nz[i+1], MPI_INT, i+1, tag, MPI_COMM_WORLD);
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &ts_end);
-        time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-        
         // free useless memory space
         for(int i=0; i<p_size-1;i++){
             free(temp_I[i]);
@@ -564,9 +525,6 @@ void interface_2(int argc, char *argv[]){
         market_matrix *mtx_F;
         mtx_F = (market_matrix *)malloc(sizeof(market_matrix));
         read_mm_matrices(mtx_F, argv[1]);
-
-        // timing for distributing filter F 
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
         
         // compute rows per node and total nonzero element per node
         F_N     = mtx_F->N / p_size;
@@ -621,9 +579,6 @@ void interface_2(int argc, char *argv[]){
             MPI_Send(temp_J[i],temp_nz[i+1], MPI_INT, i+1, tag, MPI_COMM_WORLD);
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &ts_end);
-        time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-        
         // free useless memory space
         for(int i=0; i<p_size-1;i++){
             free(temp_I[i]);
@@ -661,8 +616,6 @@ void interface_2(int argc, char *argv[]){
         MPI_Recv(F_coo_I, F_nz, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
         MPI_Recv(F_coo_J, F_nz, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
 
-        printf("%d, %d, %d \n",N,M,nz);
-        printf("%d, %d, %d \n",F_N,F_M,F_nz);
     }
 
     // transform submatrix A to csr format
@@ -774,8 +727,6 @@ void interface_2(int argc, char *argv[]){
         int total_size = coo_C->cur_nz;
         int sub_size[p_size-1];
 
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
-
         // compute total number of non zero element
         for(int i=1;i<p_size;i++){
             MPI_Recv(&sub_size[i-1], 1, MPI_INT, i, tag, MPI_COMM_WORLD, &status);
@@ -819,13 +770,6 @@ void interface_2(int argc, char *argv[]){
                 free(temp_J);
             }
         }
-
-        clock_gettime(CLOCK_MONOTONIC, &ts_end);
-        time += 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
-
-        // total time is the sum of timings for broadcast B, distribute A and F,
-        // blocking A, blocking B, blocking F matrix multiplication, gather results
-        printf("Master Node: Total time for distributed implementation %lf \n",time/(double)(1000000));
     }
     else{
         

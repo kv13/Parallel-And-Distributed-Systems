@@ -88,8 +88,6 @@ void blocking_csc3(blocked_csc *blk_B, csc_format *csc_B){
     } 
     free(arr);
 
-    printf("no zero blocks : %d, b:%d \n",blk_B->nzb,blk_B->b);
-    printf("%ld\n",(long int)blk_B->nzb*(blk_B->b+1));
     size = blk_B->nzb*(blk_B->b+1);
 
     blk_B->csc_row = (uint32_t *)calloc(blk_B->nz,sizeof(uint32_t));
@@ -178,9 +176,7 @@ void blocking_csr3(blocked_csr *blk_A, csr_format *csr_A){
         blk_A->blk_nz[i+1] = blk_A->blk_nz[i] + arr[i].nzs;
     }
     free(arr);
-
-    printf("no zero blocks : %d, b:%d \n",blk_A->nzb,blk_A->b);
-    printf("%ld\n",(long int)blk_A->nzb*(blk_A->b+1));
+    
     size = blk_A->nzb*(blk_A->b+1);
     
     blk_A->csr_col = (uint32_t *)calloc(blk_A->nz,sizeof(uint32_t));
