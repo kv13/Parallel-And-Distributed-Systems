@@ -249,9 +249,6 @@ void interface_1(int argc, char *argv[]){
     time_1 = 1000000*(double)(ts_end.tv_sec-ts_start.tv_sec)+(double)(ts_end.tv_nsec-ts_start.tv_nsec)/1000;
     printf("node %d: blocking time for matrix B %lf seconds \n",p_rank, time_1/(double)(1000000));
 
-    if(p_rank == 0)
-        time += time_1;
-
     //free useless memory
     csc_free(csc_B);
 
